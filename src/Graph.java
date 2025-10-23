@@ -1,91 +1,67 @@
-package scplanner.graph;
-
 import java.util.*;
 
-public class Graph {
-    // adjacency list: node -> list of edges (undirected)
-    private final Map<String, List<Edge>> adj = new HashMap<>();
 
-    public void addVertex(String name) {
-        adj.putIfAbsent(name, new ArrayList<>());
+class Graph {
+    private Map<String, List<String>> adjList;
+
+    public Graph() {
+        adjList = new HashMap<>();
     }
 
-    public boolean hasVertex(String name) {
-        return adj.containsKey(name);
+    public void addLocation(String location) {
+        adjList.putIfAbsent(location, new ArrayList<>());
     }
 
-    public void removeVertex(String name) {
-        if (!adj.containsKey(name)) return;
-        adj.remove(name);
-        for (List<Edge> edges : adj.values()) {
-            edges.removeIf(e -> e.to.equals(name));
+    public void removeLocation(String location) {
+        adjList.remove(location);
+        for (List<String> connections : adjList.values()) {
+            connections.remove(location);
         }
     }
 
-    public void addEdge(String a, String b, int weight) {
-        addVertex(a); addVertex(b);
-        // avoid duplicate
-        if (adj.get(a).stream().noneMatch(e -> e.to.equals(b)))
-            adj.get(a).add(new Edge(b, weight));
-        if (adj.get(b).stream().noneMatch(e -> e.to.equals(a)))
-            adj.get(b).add(new Edge(a, weight));
+    public void addRoad(String from, String to) {
+        if (adjList.containsKey(from) && adjList.containsKey(to)) {
+            adjList.get(from).add(to);
+            adjList.get(to).add(from);
+        } else {
+            System.out.println("One or both locations do not exist!");
+        }
     }
 
-    public void removeEdge(String a, String b) {
-        if (adj.containsKey(a)) adj.get(a).removeIf(e -> e.to.equals(b));
-        if (adj.containsKey(b)) adj.get(b).removeIf(e -> e.to.equals(a));
+    public void removeRoad(String from, String to) {
+        if (adjList.containsKey(from)) adjList.get(from).remove(to);
+        if (adjList.containsKey(to)) adjList.get(to).remove(from);
     }
 
     public void displayConnections() {
-        if (adj.isEmpty()) {
-            System.out.println("No connections.");
+        System.out.println("\n--- City Connections ---");
+        for (String location : adjList.keySet()) {
+            System.out.println(location + " -> " + adjList.get(location));
+        }
+    }
+
+
+    public void bfsTraversal(String start) {
+        if (!adjList.containsKey(start)) {
+            System.out.println("Location not found!");
             return;
         }
-        for (String v : adj.keySet()) {
-            System.out.print(v + " -> ");
-            List<Edge> list = adj.get(v);
-            if (list.isEmpty()) System.out.println("none");
-            else {
-                System.out.println(String.join(", ",
-                    list.stream().map(Edge::toString).toArray(String[]::new)));
+        Set<String> visited = new HashSet<>();
+        Queue<String> queue = new LinkedList<>();
+        queue.add(start);
+        visited.add(start);
+        System.out.println("\nBFS Traversal from " + start + ":");
+
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            System.out.print(current + " ");
+            for (String neighbor : adjList.get(current)) {
+                if (!visited.contains(neighbor)) {
+                    visited.add(neighbor);
+                    queue.add(neighbor);
+                }
             }
         }
+        System.out.println();
     }
-
-    // BFS returns traversal order using a queue
-    public List<String> bfs(String start) {
-        List<String> order = new ArrayList<>();
-        if (!adj.containsKey(start)) return order;
-        Queue<String> q = new LinkedList<>();
-        Set<String> seen = new HashSet<>();
-        q.add(start); seen.add(start);
-        while (!q.isEmpty()) {
-            String cur = q.poll();
-            order.add(cur);
-            for (Edge e : adj.get(cur)) {
-                if (!seen.contains(e.to)) { seen.add(e.to); q.add(e.to); }
-            }
-        }
-        return order;
-    }
-
-    // DFS using explicit stack
-    public List<String> dfs(String start) {
-        List<String> order = new ArrayList<>();
-        if (!adj.containsKey(start)) return order;
-        Stack<String> st = new Stack<>();
-        Set<String> seen = new HashSet<>();
-        st.push(start);
-        while (!st.isEmpty()) {
-            String cur = st.pop();
-            if (seen.contains(cur)) continue;
-            seen.add(cur); order.add(cur);
-            for (Edge e : adj.get(cur)) {
-                if (!seen.contains(e.to)) st.push(e.to);
-            }
-        }
-        return order;
-    }
-
-    public Set<String> vertices() { return adj.keySet(); }
 }
