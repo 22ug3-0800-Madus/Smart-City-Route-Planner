@@ -1,8 +1,3 @@
-gickage scplanner.manager;
-
-import scplanner.model.Location;
-import scplanner.graph.Graph;
-import scplanner.tree.AVLTree;
 import java.util.List;
 
 public class LocationManager {
