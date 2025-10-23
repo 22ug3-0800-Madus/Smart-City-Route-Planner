@@ -1,11 +1,8 @@
-public package scplanner;
-
-import scplanner.manager.LocationManager;
 import java.util.List;
 import java.util.Scanner;
 
 public class Main {
-    private static final Scannergi sc = new Scanner(System.in);
+    private static final Scanner sc = new Scanner(System.in);
     private static final LocationManager manager = new LocationManager();
 
     public static void main(String[] args) {
@@ -19,8 +16,8 @@ public class Main {
                 case "4": removeRoad(); break;
                 case "5": manager.displayConnections(); break;
                 case "6": manager.displayLocationsInOrder(); break;
-                case "7": System.out.println("Exiting..."); return;
-                case "8": traverseDemo(); break; // extra: BFS/DFS demo
+                case "7": traverseDemo(); break; // BFS/DFS demo
+                case "0": System.out.println("Exiting..."); return;
                 default: System.out.println("Invalid choice. Try again.");
             }
         }
@@ -34,7 +31,8 @@ public class Main {
         System.out.println("4. Remove a road");
         System.out.println("5. Display all connections");
         System.out.println("6. Display all locations (AVL inorder)");
-        System.out.println("7. Exit");
+        System.out.println("7. Traverse (BFS/DFS)");
+        System.out.println("0. Exit");
         System.out.print("Enter your choice: ");
     }
 
@@ -84,6 +82,4 @@ public class Main {
         System.out.println("BFS order: " + bfs);
         System.out.println("DFS order: " + dfs);
     }
-} {
-    
 }
