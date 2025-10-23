@@ -1,114 +1,94 @@
-package scplanner.tree;
-
-import scplanner.model.Location;
 import java.util.*;
 
-class AVLNode {
-    Location loc;
-    AVLNode left, right;
-    int height;
-    AVLNode(Location loc) { this.loc = loc; height = 1; }
-}
+public class Graph {
+    private final Map<String, List<Edge>> adj = new HashMap<>();
 
-public class AVLTree {
-    private AVLNode root;
-
-    public boolean insert(Location loc) {
-        if (loc == null) return false;
-        if (contains(loc.getName())) return false;
-        root = insert(root, loc);
-        return true;
+    private static class Edge {
+        final String to;
+        final int weight;
+        Edge(String to, int weight) { this.to = to; this.weight = weight; }
+        @Override public String toString() { return to + "(" + weight + ")"; }
     }
 
-    public boolean delete(String name) {
-        if (!contains(name)) return false;
-        root = delete(root, name);
-        return true;
+    public void addVertex(String name) {
+        adj.putIfAbsent(name, new ArrayList<>());
     }
 
-    public boolean contains(String name) {
-        return getNode(root, name) != null;
+    public boolean hasVertex(String name) {
+        return adj.containsKey(name);
     }
 
-    public List<Location> inorder() {
-        List<Location> list = new ArrayList<>();
-        inorder(root, list);
-        return list;
-    }
-
-    private AVLNode getNode(AVLNode node, String name) {
-        if (node == null) return null;
-        int cmp = name.compareToIgnoreCase(node.loc.getName());
-        if (cmp == 0) return node;
-        return cmp < 0 ? getNode(node.left, name) : getNode(node.right, name);
-    }
-
-    private void inorder(AVLNode n, List<Location> out) {
-        if (n == null) return;
-        inorder(n.left, out);
-        out.add(n.loc);
-        inorder(n.right, out);
-    }
-
-    private AVLNode insert(AVLNode node, Location loc) {
-        if (node == null) return new AVLNode(loc);
-        int cmp = loc.getName().compareToIgnoreCase(node.loc.getName());
-        if (cmp < 0) node.left = insert(node.left, loc);
-        else node.right = insert(node.right, loc);
-        updateHeight(node);
-        return balance(node);
-    }
-
-    private AVLNode delete(AVLNode node, String name) {
-        if (node == null) return null;
-        int cmp = name.compareToIgnoreCase(node.loc.getName());
-        if (cmp < 0) node.left = delete(node.left, name);
-        else if (cmp > 0) node.right = delete(node.right, name);
-        else {
-            // found
-            if (node.left == null) return node.right;
-            if (node.right == null) return node.left;
-            // two children: replace with inorder successor
-            AVLNode succ = minValueNode(node.right);
-            node.loc = succ.loc;
-            node.right = delete(node.right, succ.loc.getName());
+    public void removeVertex(String name) {
+        if (!adj.containsKey(name)) return;
+        adj.remove(name);
+        for (List<Edge> edges : adj.values()) {
+            edges.removeIf(e -> e.to.equals(name));
         }
-        updateHeight(node);
-        return balance(node);
     }
 
-    private AVLNode minValueNode(AVLNode n) {
-        while (n.left != null) n = n.left;
-        return n;
+    public void addEdge(String a, String b, int weight) {
+        addVertex(a); addVertex(b);
+        if (adj.get(a).stream().noneMatch(e -> e.to.equals(b)))
+            adj.get(a).add(new Edge(b, weight));
+        if (adj.get(b).stream().noneMatch(e -> e.to.equals(a)))
+            adj.get(b).add(new Edge(a, weight));
     }
 
-    // AVL helpers
-    private void updateHeight(AVLNode n) {
-        n.height = 1 + Math.max(height(n.left), height(n.right));
-    }
-    private int height(AVLNode n) { return n == null ? 0 : n.height; }
-    private int getBalance(AVLNode n) { return n == null ? 0 : height(n.left) - height(n.right); }
-
-    private AVLNode balance(AVLNode node) {
-        int balance = getBalance(node);
-        if (balance > 1 && getBalance(node.left) >= 0) return rotateRight(node);
-        if (balance > 1) { node.left = rotateLeft(node.left); return rotateRight(node); }
-        if (balance < -1 && getBalance(node.right) <= 0) return rotateLeft(node);
-        if (balance < -1) { node.right = rotateRight(node.right); return rotateLeft(node); }
-        return node;
+    public void removeEdge(String a, String b) {
+        if (adj.containsKey(a)) adj.get(a).removeIf(e -> e.to.equals(b));
+        if (adj.containsKey(b)) adj.get(b).removeIf(e -> e.to.equals(a));
     }
 
-    private AVLNode rotateRight(AVLNode y) {
-        AVLNode x = y.left; AVLNode T2 = x.right;
-        x.right = y; y.left = T2;
-        updateHeight(y); updateHeight(x);
-        return x;
+    public void displayConnections() {
+        if (adj.isEmpty()) {
+            System.out.println("No connections.");
+            return;
+        }
+        for (String v : adj.keySet()) {
+            System.out.print(v + " -> ");
+            List<Edge> list = adj.get(v);
+            if (list.isEmpty()) System.out.println("none");
+            else {
+                System.out.println(String.join(", ",
+                    list.stream().map(Edge::toString).toArray(String[]::new)));
+            }
+        }
     }
 
-    private AVLNode rotateLeft(AVLNode x) {
-        AVLNode y = x.right; AVLNode T2 = y.left;
-        y.left = x; x.right = T2;
-        updateHeight(x); updateHeight(y);
-        return y;
-    }
+    // BFS returns traversal order using a queue
+    public List<String> bfs(String start) {
+        List<String> order = new ArrayList<>();
+        if (!adj.containsKey(start)) return order;
+        Queue<String> q = new LinkedList<>();
+        Set<String> seen = new HashSet<>();
+        q.add(start); seen.add(start);
+        while (!q.isEmpty()) {
+            String cur = q.poll();
+            order.add(cur);
+            for (Edge e : adj.get(cur)) {
+                if (!seen.contains(e.to)) { seen.add(e.to); q.add(e.to); }
+            }
+        }
+        return order;
+    }
+
+    // DFS using explicit stack
+    public List<String> dfs(String start) {
+        List<String> order = new ArrayList<>();
+        if (!adj.containsKey(start)) return order;
+        Stack<String> st = new Stack<>();
+        Set<String> seen = new HashSet<>();
+        st.push(start);
+        while (!st.isEmpty()) {
+            String cur = st.pop();
+            if (seen.contains(cur)) continue;
+            seen.add(cur); order.add(cur);
+            for (Edge e : adj.get(cur)) {
+                if (!seen.contains(e.to)) st.push(e.to);
+            }
+        }
+        return order;
+    }
+
+    public Set<String> vertices() { return adj.keySet(); }
 }
