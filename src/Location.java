@@ -4,7 +4,7 @@ public class Location {
 
     public Location(String name, String description) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Location name is required");
+            throw new IllegalArgumentException("location name is required");
         }
         this.name = name.trim();
         this.description = description == null ? "" : description.trim();
